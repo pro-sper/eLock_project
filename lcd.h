@@ -14,6 +14,9 @@
 *******************************************************************/
 void LCD_Init(void);
 void LCD_Send_Command(uint8_t cmd);
+void LCD_SendChar(char c);
+void LCD_Print(const char* str);
+void LCD_SetCursor(uint8_t col, uint8_t row);
 
 /*******************************************************************
 *							DEFINES

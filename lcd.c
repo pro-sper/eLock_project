@@ -53,3 +53,29 @@ void LCD_Init() {
         __delay_cycles(2000);
     }
 }
+
+void LCD_SendChar(char c) {
+    uint8_t data[4];
+
+    // Send high nibble (RS=1 for data register)
+    data[0] = (c & 0xF0) | 0x09;        // High nibble with RS=1
+    data[1] = data[0] | 0x04;           // Enable high
+    data[2] = data[0];
+
+    // Send low nibble (RS=1 for data register)
+    data[3] = ((c & 0x0F) << 4) | 0x09; // Low nibble with RS=1
+
+    // Send all bytes via I2C
+    i2c0_put(data, 4);
+}
+
+void LCD_Print(const char* str) {
+    while (*str) {
+        LCD_SendChar(*str++);
+    }
+}
+
+void LCD_SetCursor(uint8_t col, uint8_t row) {
+    uint8_t address = (row == 0 ? 0x80 : 0xC0) + col;
+    LCD_SendCommand(address);
+}

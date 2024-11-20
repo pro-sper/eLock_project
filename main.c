@@ -29,6 +29,14 @@ int main(void)
 	
 	LCD_Init();
 
+	LCD_SetCursor(2, 1);
+	LCD_SendChar('A');
+	// LCD_Print("Hello world!");
+
+	/*LCD_SetCursor(2, 1);
+	LCD_Print("LCD Tutorial");*/
+
+
 	return 0;
 }
 
