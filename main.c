@@ -25,10 +25,12 @@ int main(void)
 
 	LCD_SetCursor(1, 0);
 	LCD_SendChar('A');
-	// LCD_Print("Hello world!");
+	LCD_Clear();
+	
+	LCD_Print("Hello world!");
 
-	/*LCD_SetCursor(2, 1);
-	LCD_Print("LCD Tutorial");*/
+	LCD_SetCursor(2, 1);
+	LCD_Print("LCD Tutorial");
 
 
 	return 0;
