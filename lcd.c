@@ -5,7 +5,6 @@
 #include "Common.h"
 #include "math.h"
 
-
 /*
  * lcd.c
  *
@@ -18,6 +17,14 @@
 /*******************************************************************
 *						FUNCTION DEFINITIONS
 *******************************************************************/
+
+void msdelay(int delay)
+{
+    int i,j;
+    for(i=0;i<delay;i++)
+        for(j=0;j<16000;j++);
+}
+
 void LCD_SendCommand(uint8_t cmd) {
     uint8_t data[6];
 
@@ -36,37 +43,46 @@ void LCD_SendCommand(uint8_t cmd) {
 
 void LCD_Init() {
     // Initialize the LCD by sending a sequence of commands
-    uint8_t init_commands[] = {
-        0x33,   // Initialize LCD in 4-bit mode (send twice as per datasheet)
-        0x32,   // Set to 4-bit mode
-        0x28,   // Function set: 4-bit mode, 2-line, 5x7 matrix
-        0x0C,   // Display ON, cursor OFF
-        0x06,   // Entry mode set: auto-increment cursor
-        0x01,   // Clear display
-    };
+	
+    // 4 bit initialization
+    msdelay(50);          // Wait for >40ms
+    LCD_SendCommand(0x30);
+    msdelay(5);           // Wait for >4.1ms
+    LCD_SendCommand(0x30);
+    msdelay(1);            // Wait for >100us
+    LCD_SendCommand(0x30);
+    msdelay(10);      
+    LCD_SendCommand(0x20);  // Set to 4-bit mode
+    msdelay(10);
 
-    int n = sizeof(init_commands) / sizeof(init_commands[0]);
-	int i;
-    // Loop through and send each command
-    for (i = 0; i < n; i++) {
-        LCD_SendCommand(init_commands[i]);
-        __delay_cycles(2000);
-    }
+    // Display Initialization
+    LCD_SendCommand(0x28);   // Function set: 4-bit mode, 2-line, 5x7 matrix
+    msdelay(1);
+    LCD_SendCommand(0x08);   // Display OFF
+    msdelay(1);
+    LCD_SendCommand(0x01);   // Clear display
+    msdelay(1);
+    LCD_SendCommand(0x06);   // Entry mode set: auto-increment cursor
+    msdelay(1);
+    LCD_SendCommand(0x0C);   // Display ON, cursor OFF
+    msdelay(1);
 }
 
 void LCD_SendChar(char c) {
-    uint8_t data[4];
+    uint8_t data[6];
 
     // Send high nibble (RS=1 for data register)
     data[0] = (c & 0xF0) | 0x09;        // High nibble with RS=1
     data[1] = data[0] | 0x04;           // Enable high
-    data[2] = data[0];
+    data[2] = data[0];                  // Enable low
 
     // Send low nibble (RS=1 for data register)
     data[3] = ((c & 0x0F) << 4) | 0x09; // Low nibble with RS=1
-
+    data[4] = data[3] | 0x04;           // Enable high
+    data[5] = data[3];                  // Enable low
+	
     // Send all bytes via I2C
-    i2c0_put(data, 4);
+    i2c0_put(data, 6);
 }
 
 void LCD_Print(const char* str) {
@@ -76,6 +92,11 @@ void LCD_Print(const char* str) {
 }
 
 void LCD_SetCursor(uint8_t col, uint8_t row) {
-    uint8_t address = (row == 0 ? 0x80 : 0xC0) + col;
+    uint8_t address = (row == 0 ? 0x80 : 0xC0) | col;
     LCD_SendCommand(address);
+}
+
+void LCD_Clear(void) {
+    LCD_SendCommand(0x01);
+		msdelay(1);
 }

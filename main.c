@@ -12,12 +12,6 @@ extern unsigned char LCD_TEXT_ARR[1024];
 extern unsigned char LCD_GRAPH_ARR[1024];
 uint16_t lineData[128];
 
-void msdelay(int delay)
-{
-    int i,j;
-    for(i=0;i<delay;i++)
-        for(j=0;j<16000;j++);
-}
 
 int main(void)
 {
@@ -29,7 +23,7 @@ int main(void)
 	
 	LCD_Init();
 
-	LCD_SetCursor(2, 1);
+	LCD_SetCursor(1, 0);
 	LCD_SendChar('A');
 	// LCD_Print("Hello world!");
 
