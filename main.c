@@ -3,80 +3,186 @@
  */
 #include "msp.h"
 #include "lcd.h"
+#include "uart.h"		
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-extern unsigned char LCD_clr_data[1024];
-extern unsigned char LCD_TEXT_ARR[1024];
-extern unsigned char LCD_GRAPH_ARR[1024];
-uint16_t lineData[128];
-void msdelay(int delay)
-{
-    int i,j;
-    for(i=0;i<delay;i++)
-        for(j=0;j<16000;j++);
-}
 
-int main(void)
+
+
+#define CHAR_COUNT 10      //change this to modify the max. permissible length of a sentence
+
+void LCD_main(void)
 {
-	int i;
-	int delta;
+	const char data[] = "Sonic";
+	const char data2[] = "Shadow";
+	const char data3[] = "Silver";
 	
-	unsigned char data[] = "Hello World";
-	unsigned char data2[] = "How are you?";
-	unsigned char data3[] = "Goodbye";
+	i2c0_Init(LCD_ADDR);
 	
 	LCD_Init();
+
+	LCD_SetCursor(1, 0);
+	LCD_SendChar('A');
+	LCD_Clear();
 	
-	LCD_draw_line(1 , 1, data);
-  
-}
+	LCD_Print("Hello world!");
 
+	LCD_SetCursor(2, 1);
+	LCD_Print("LCD Tutorial");
 
+	msdelay(500);
+	LCD_Clear();
 
-
-
-
-
-
-
-
-
-
-
-
-/*  
-		LCD_display_on();
-		LCD_display_clear();
-		LCD_display_on();
-
-		// write "Hello World" on line 1, column 1
-    // write "How are you?" on line 2, column 2
-    // write "Goodbye" on line 3, column 3
-	// (HINT: Use LCD_draw_line)
-	  
-		
-		LCD_draw_line(1 , 1, data);
-    //LCD_write_display(data);
-    
-		LCD_draw_line(2 , 2, data2);
-		//LCD_write_display(data2);
-    
-		LCD_draw_line(3 , 3, data3);
-		//LCD_write_display(data3);
-    
-	// create some fake 14-bit camera line data 0 - >2^14 in a 128 short array that utilizes all 14 bits
-	
-	for (i = 0; i < 128; i++){
-		lineData[i] =  i * 128;
+	while (1) {
+		LCD_Print(data);
+		msdelay(200);
+		LCD_Clear();
+		LCD_Print(data2);
+		msdelay(200);
+		LCD_Clear();
+		LCD_Print(data3);
+		msdelay(500);
+		LCD_Clear();
 	}
 	
-	while(1)
-	{
-			LCD_write_display(LCD_TEXT_ARR);
-			msdelay(500);
-			LCD_DisplayCameraData(lineData);
-			msdelay(500);
+}
 
-	}*/
+void UART_main()
+{
+	BYTE c = 0;											// declare a character 'c' (initilized to NULL)
+	char inputStr[CHAR_COUNT];
+	int char_indx = 0;			// Keeps track of current length of string
+	
+	//SystemCoreClock
+	uart0_init();
+	
+	
+	uart0_put("\r\n IDE Lab2: Enter a sentence: \r\n");    /*Transmit this through UART*/
+	
+	
+	for (;;){
+		c = uart0_getchar();
+		
+//	uart0_putchar(c);
+		if (c != '\r'){
+			if (char_indx < CHAR_COUNT){
+				inputStr[char_indx] = c;
+				uart0_putchar(c);
+				char_indx++;
+			}
+		}else if (c == '\r'){
+			inputStr[char_indx++] = '\0';
+			uart0_put("\r\n");
+			
+			uart0_put(inputStr);
+			
+			uart0_put("\r\n");
+			
+			inputStr[0] = '\0';
+			char_indx = 0;
+		}
+	}
+}  
+
+int tolower(int c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c + ('a' - 'A');
+    } else {
+        return c;
+    }
+}
+
+int checkPassWord(char* inPass) {
+    char* the_password = "Killmonger";
+    int i;
+
+    // Convert both strings to lowercase for case-insensitive comparison
+    for (i = 0; inPass[i] != '\0' && the_password[i] != '\0'; i++) {
+        inPass[i] = tolower(inPass[i]);
+        the_password[i] = tolower(the_password[i]);
+    }
+
+    return strcmp(inPass, the_password);
+}
+
+int main()
+{
+	BYTE c = 0;											// declare a character 'c' (initilized to NULL)
+	char inputStr[CHAR_COUNT];
+	int char_indx = 0;			// Keeps track of current length of string
+	
+	
+	// Initialize the device for I2C and LCD
+	i2c0_Init(LCD_ADDR);
+	LCD_Init();
+	
+	// Initialize the UART
+	uart0_init();
+	uart0_put("\r\n eLock PIN: \r\n");
+	
+	LCD_Clear();
+	LCD_SetCursor(1, 0);
+	LCD_Print("eLock PIN:");
+
+	LCD_SetCursor(2, 1);
+	
+	while (1){
+		c = uart0_getchar();
+		
+//	uart0_putchar(c);
+		if (c != '\r'){
+			if (char_indx < CHAR_COUNT){
+				inputStr[char_indx] = c;
+				uart0_putchar(c);
+				LCD_SendChar(c);
+				char_indx++;
+			}
+		}else if (c == '\r'){
+			inputStr[char_indx++] = '\0';
+			uart0_put("\r\n");
+			
+			uart0_put(inputStr);
+			
+			if (checkPassWord(inputStr)){
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("ACCESS GRANTED");
+				msdelay(50);
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("ACCESS GRANTED");
+				msdelay(50);
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("ACCESS GRANTED");
+				msdelay(50);
+			}else{
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("ACCESS DENIED");
+				msdelay(50);
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("ACCESS DENIED");
+				msdelay(50);
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("ACCESS DENIED");
+				msdelay(50);
+				
+				LCD_Clear();
+				LCD_SetCursor(1, 0);
+				LCD_Print("Try Again: ");
+				LCD_SetCursor(2, 1);
+			}
+			
+			uart0_put("\r\n");
+			
+			inputStr[0] = '\0';
+			char_indx = 0;
+		}
+	}
+	
+}
